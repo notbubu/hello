@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>STORMCALC — Calculatrice Scientifique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #05060f;
+    --cloud: #10132b;
+    --cloud-2: #171b3d;
+    --violet: #8a6bff;
+    --violet-deep: #5b3df0;
+    --bolt: #e8ff5b;
+    --bolt-soft: #d4ff3d;
+    --ink: #eef0ff;
+    --ink-dim: #9aa0c9;
+    --key: #1b1f45;
+    --key-hi: #262b58;
+    --danger: #ff5b7a;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    height: 100%;
+    margin: 0;
+    background: var(--void);
+  }
+
+  body{
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+    padding: 24px 16px;
+  }
+
+  /* ---------- storm background ---------- */
+  .sky{
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(90,60,240,0.35), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 10%, rgba(120,80,255,0.25), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 50% 110%, rgba(30,20,80,0.6), transparent 60%),
+      linear-gradient(180deg, #05060f 0%, #090b1e 45%, #05060f 100%);
+  }
+
+  .flash{
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(circle at 60% 15%, rgba(230,235,255,0.9), rgba(138,107,255,0.15) 40%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  @keyframes strike{
+    0%   { opacity: 0; }
+    3%   { opacity: 0.9; }
+    6%   { opacity: 0.1; }
+    9%   { opacity: 0.7; }
+    14%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+  .flash.active{ animation: strike 900ms ease-out; }
+
+  .bolt-deco{
+    position: fixed;
+    z-index: 1;
+    opacity: 0.16;
+    filter: drop-shadow(0 0 18px rgba(138,107,255,0.55));
+    pointer-events: none;
+  }
+  .bolt-deco.b1{ top: 6%; left: 8%;  width: 90px;  transform: rotate(-8deg); }
+  .bolt-deco.b2{ bottom: 8%; right: 6%; width: 130px; transform: rotate(10deg); }
+
+  /* ---------- app shell ---------- */
+  .app{
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .brand{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .brand svg{ width: 26px; height: 26px; filter: drop-shadow(0 0 8px var(--bolt-soft)); }
+  .brand h1{
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 4px;
+    margin: 0;
+    background: linear-gradient(90deg, var(--ink), var(--violet) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .card{
+    background: linear-gradient(165deg, var(--cloud) 0%, var(--cloud-2) 100%);
+    border: 1px solid rgba(138,107,255,0.25);
+    border-radius: 22px;
+    padding: 18px;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.4),
+      0 20px 60px rgba(20,10,60,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before{
+    content:"";
+    position:absolute;
+    top:-40%; left:-20%;
+    width: 60%; height: 220%;
+    background: linear-gradient(100deg, transparent, rgba(138,107,255,0.06), transparent);
+    transform: rotate(12deg);
+    pointer-events:none;
+  }
+
+  /* ---------- display ---------- */
+  .display{
+    background: #06081a;
+    border: 1px solid rgba(138,107,255,0.3);
+    border-radius: 14px;
+    padding: 18px 16px 14px;
+    margin-bottom: 14px;
+    text-align: right;
+    position: relative;
+    transition: box-shadow 120ms ease, border-color 120ms ease;
+  }
+  .display.spark{
+    border-color: var(--bolt-soft);
+    box-shadow: 0 0 0 1px rgba(228,255,91,0.4), 0 0 24px rgba(228,255,91,0.25);
+  }
+
+  .mode-row{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-bottom: 6px;
+  }
+  .mode-pill{
+    font-family:'Rajdhani',sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--violet);
+    border: 1px solid rgba(138,107,255,0.4);
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: rgba(138,107,255,0.08);
+    cursor: pointer;
+    user-select: none;
+    transition: all 120ms ease;
+  }
+  .mode-pill:active{ transform: scale(0.94); }
+  .mode-pill.on{
+    color: var(--void);
+    background: var(--bolt);
+    border-color: var(--bolt);
+  }
+
+  .expr{
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    color: var(--ink-dim);
+    min-height: 20px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+  }
+
+  .result{
+    font-family: 'Orbitron', sans-serif;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+    word-break: break-all;
+    text-shadow: 0 0 18px rgba(138,107,255,0.35);
+    min-height: 48px;
+  }
+
+  /* ---------- keys ---------- */
+  .keys{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .sci-toggle-row{
+    display:flex;
+    justify-content:center;
+    margin-bottom: 10px;
+  }
+
+  button.key{
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 13px 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(138,107,255,0.12);
+    background: var(--key);
+    color: var(--ink);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 90ms ease, background 120ms ease, box-shadow 120ms ease;
+  }
+  button.key:hover{ background: var(--key-hi); }
+  button.key:active{ transform: translateY(1px) scale(0.97); }
+
+  button.key.num{ background: var(--key); }
+  button.key.op{
+    background: rgba(138,107,255,0.14);
+    color: var(--violet);
+    border-color: rgba(138,107,255,0.4);
+  }
+  button.key.op:hover{ background: rgba(138,107,255,0.22); }
+
+  button.key.fn{
+    font-size: 13px;
+    background: rgba(90,60,240,0.1);
+    color: var(--ink-dim);
+    border-color: rgba(90,60,240,0.2);
+  }
+  button.key.fn:hover{ color: var(--ink); background: rgba(90,60,240,0.18); }
+
+  button.key.clear{
+    color: var(--danger);
+    background: rgba(255,91,122,0.08);
+    border-color: rgba(255,91,122,0.25);
+  }
+  button.key.clear:hover{ background: rgba(255,91,122,0.16); }
+
+  button.key.equals{
+    grid-column: span 2;
+    background: linear-gradient(135deg, var(--bolt), var(--bolt-soft));
+    color: #10130a;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: none;
+    box-shadow: 0 0 20px rgba(228,255,91,0.35);
+  }
+  button.key.equals:hover{ box-shadow: 0 0 28px rgba(228,255,91,0.55); }
+  button.key.equals:active{ transform: translateY(1px) scale(0.97); }
+
+  .spark-fx{
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9), transparent 60%);
+  }
+  button.key.zap .spark-fx{
+    animation: zap 350ms ease-out;
+  }
+  @keyframes zap{
+    0%{ opacity: 0.9; }
+    100%{ opacity: 0; }
+  }
+
+  .hint{
+    text-align:center;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 380px){
+    .result{ font-size: 32px; }
+    button.key{ font-size: 14px; padding: 11px 2px; }
+    button.key.fn{ font-size: 11.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .flash.active{ animation: none; opacity: 0; }
+    .spark-fx{ display:none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="sky"></div>
+  <div class="flash" id="flash"></div>
+
+  <svg class="bolt-deco b1" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 10-13h-6l1-7z" fill="#8a6bff"/></svg>
+  <svg class="bolt-deco b2" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 10-13h-6l1-7z" fill="#e8ff5b"/></svg>
+
+  <div class="app">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 10-13h-6l1-7z" fill="#e8ff5b"/></svg>
+      <h1>STORMCALC</h1>
+    </div>
+
+    <div class="card">
+      <div class="display" id="displayBox">
+        <div class="mode-row">
+          <span class="mode-pill" id="degRad" title="Degrés / Radians">DEG</span>
+          <span class="mode-pill" id="invBtn" title="Fonctions inverses">INV</span>
+        </div>
+        <div class="expr" id="expr">&nbsp;</div>
+        <div class="result" id="result">0</div>
+      </div>
+
+      <div class="sci-toggle-row">
+        <span class="mode-pill" id="sciToggle">⚡ MODE SCIENTIFIQUE</span>
+      </div>
+
+      <div class="keys" id="sciRow" style="display:none; margin-bottom:8px;">
+        <button class="key fn" data-fn="sin">sin</button>
+        <button class="key fn" data-fn="cos">cos</button>
+        <button class="key fn" data-fn="tan">tan</button>
+        <button class="key fn" data-fn="log">log</button>
+        <button class="key fn" data-fn="ln">ln</button>
+
+        <button class="key fn" data-fn="sqrt">√</button>
+        <button class="key fn" data-fn="pow2">x²</button>
+        <button class="key fn" data-fn="powy">xʸ</button>
+        <button class="key fn" data-fn="fact">n!</button>
+        <button class="key fn" data-fn="inv1x">1/x</button>
+
+        <button class="key fn" data-val="(">(</button>
+        <button class="key fn" data-val=")">)</button>
+        <button class="key fn" data-val="pi">π</button>
+        <button class="key fn" data-val="e">e</button>
+        <button class="key fn" data-fn="exp">eˣ</button>
+      </div>
+
+      <div class="keys">
+        <button class="key clear" data-action="ac">AC</button>
+        <button class="key clear" data-action="back">⌫</button>
+        <button class="key fn" data-val="%">%</button>
+        <button class="key op" data-val="/">÷</button>
+        <button class="key op" data-val="*">×</button>
+
+        <button class="key num" data-val="7">7</button>
+        <button class="key num" data-val="8">8</button>
+        <button class="key num" data-val="9">9</button>
+        <button class="key op" data-val="-">−</button>
+        <button class="key fn" data-fn="ans">Ans</button>
+
+        <button class="key num" data-val="4">4</button>
+        <button class="key num" data-val="5">5</button>
+        <button class="key num" data-val="6">6</button>
+        <button class="key op" data-val="+" style="grid-row: span 2;">+</button>
+        <button class="key fn" data-action="mplus">M+</button>
+
+        <button class="key num" data-val="1">1</button>
+        <button class="key num" data-val="2">2</button>
+        <button class="key num" data-val="3">3</button>
+        <button class="key fn" data-action="mr">MR</button>
+
+        <button class="key num" data-val="0" style="grid-column: span 2;">0</button>
+        <button class="key num" data-val=".">.</button>
+        <button class="key equals" data-action="equals">=<span class="spark-fx"></span></button>
+      </div>
+    </div>
+
+    <div class="hint">appuie sur ⚡ pour l'orage scientifique</div>
+  </div>
+
+<script>
+(function(){
+  const exprEl = document.getElementById('expr');
+  const resultEl = document.getElementById('result');
+  const displayBox = document.getElementById('displayBox');
+  const flash = document.getElementById('flash');
+  const degRadBtn = document.getElementById('degRad');
+  const invBtn = document.getElementById('invBtn');
+  const sciToggle = document.getElementById('sciToggle');
+  const sciRow = document.getElementById('sciRow');
+
+  let expr = "";
+  let isDeg = true;
+  let isInv = false;
+  let memory = 0;
+  let lastAns = 0;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function randomFlash(){
+    if(reduceMotion) return;
+    flash.classList.remove('active');
+    void flash.offsetWidth; // restart animation
+    flash.classList.add('active');
+  }
+
+  // ambient random lightning, every 6-16s
+  function scheduleFlash(){
+    const delay = 6000 + Math.random()*10000;
+    setTimeout(()=>{ randomFlash(); scheduleFlash(); }, delay);
+  }
+  scheduleFlash();
+
+  function sparkDisplay(){
+    displayBox.classList.remove('spark');
+    void displayBox.offsetWidth;
+    displayBox.classList.add('spark');
+    setTimeout(()=> displayBox.classList.remove('spark'), 220);
+  }
+
+  function updateDisplay(){
+    exprEl.textContent = expr || '\u00A0';
+  }
+
+  function toRad(x){ return isDeg ? x * Math.PI/180 : x; }
+
+  function factorial(n){
+    n = Math.round(n);
+    if(n < 0) return NaN;
+    if(n > 170) return Infinity;
+    let r = 1;
+    for(let i=2;i<=n;i++) r*=i;
+    return r;
+  }
+
+  // safe-ish evaluator: whitelist chars, replace symbols, use Function
+  function evaluate(str){
+    let s = str
+      .replace(/π/g, 'PI')
+      .replace(/e(?![a-zA-Z])/g, 'E')
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/−/g, '-')
+      .replace(/√\(/g, 'sqrt(')
+      .replace(/(\d+(\.\d+)?)%/g, '($1/100)');
+
+    // guard: only allow safe characters
+    if(!/^[0-9+\-*/().,\sA-Za-z!]*$/.test(s)){
+      throw new Error('bad expr');
+    }
+
+    const scope = {
+      PI: Math.PI,
+      E: Math.E,
+      sin: (x)=> Math.sin(toRad(x)),
+      cos: (x)=> Math.cos(toRad(x)),
+      tan: (x)=> Math.tan(toRad(x)),
+      asin: (x)=> isDeg ? Math.asin(x)*180/Math.PI : Math.asin(x),
+      acos: (x)=> isDeg ? Math.acos(x)*180/Math.PI : Math.acos(x),
+      atan: (x)=> isDeg ? Math.atan(x)*180/Math.PI : Math.atan(x),
+      log: Math.log10,
+      ln: Math.log,
+      sqrt: Math.sqrt,
+      exp: Math.exp,
+      fact: factorial,
+      Ans: lastAns
+    };
+
+    const fnNames = Object.keys(scope);
+    const fn = new Function(...fnNames, `"use strict"; return (${s});`);
+    return fn(...fnNames.map(k=>scope[k]));
+  }
+
+  function append(v){
+    expr += v;
+    updateDisplay();
+  }
+
+  function press(el){
+    if(reduceMotion) return;
+    el.classList.remove('zap');
+    void el.offsetWidth;
+    el.classList.add('zap');
+  }
+
+  document.querySelectorAll('.key').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      press(btn);
+      const val = btn.dataset.val;
+      const fn = btn.dataset.fn;
+      const action = btn.dataset.action;
+
+      if(val !== undefined){
+        append(val);
+        return;
+      }
+
+      if(fn){
+        const map = {
+          sin: isInv ? 'asin(' : 'sin(',
+          cos: isInv ? 'acos(' : 'cos(',
+          tan: isInv ? 'atan(' : 'tan(',
+          log: 'log(',
+          ln: 'ln(',
+          sqrt: 'sqrt(',
+          exp: 'exp(',
+          fact: 'fact(',
+          pow2: '^2 placeholder',
+          powy: '^',
+          inv1x: '1/('
+        };
+        if(fn === 'pow2'){
+          expr += '**2';
+          updateDisplay();
+        } else if(fn === 'powy'){
+          expr += '**';
+          updateDisplay();
+        } else if(fn === 'ans'){
+          expr += 'Ans';
+          updateDisplay();
+        } else {
+          expr += map[fn];
+          updateDisplay();
+        }
+        return;
+      }
+
+      if(action === 'ac'){
+        expr = '';
+        resultEl.textContent = '0';
+        updateDisplay();
+        return;
+      }
+      if(action === 'back'){
+        expr = expr.slice(0, -1);
+        updateDisplay();
+        return;
+      }
+      if(action === 'mplus'){
+        try{
+          const v = evaluate(expr || resultEl.textContent);
+          memory += v;
+        }catch(e){}
+        return;
+      }
+      if(action === 'mr'){
+        expr += String(memory);
+        updateDisplay();
+        return;
+      }
+      if(action === 'equals'){
+        try{
+          const v = evaluate(expr);
+          if(v === undefined || Number.isNaN(v) || !isFinite(v)){
+            resultEl.textContent = v === Infinity ? '⚡ overflow' : 'erreur';
+          } else {
+            const rounded = Math.round(v * 1e10) / 1e10;
+            resultEl.textContent = rounded;
+            lastAns = rounded;
+            expr = String(rounded);
+          }
+          sparkDisplay();
+          randomFlash();
+        }catch(e){
+          resultEl.textContent = 'erreur';
+        }
+        return;
+      }
+    });
+  });
+
+  degRadBtn.addEventListener('click', ()=>{
+    isDeg = !isDeg;
+    degRadBtn.textContent = isDeg ? 'DEG' : 'RAD';
+    degRadBtn.classList.toggle('on', !isDeg);
+  });
+
+  invBtn.addEventListener('click', ()=>{
+    isInv = !isInv;
+    invBtn.classList.toggle('on', isInv);
+  });
+
+  sciToggle.addEventListener('click', ()=>{
+    const showing = sciRow.style.display !== 'none';
+    sciRow.style.display = showing ? 'none' : 'grid';
+    sciRow.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    sciToggle.classList.toggle('on', !showing);
+    sciToggle.textContent = showing ? '⚡ MODE SCIENTIFIQUE' : '⚡ MODE STANDARD';
+    randomFlash();
+  });
+
+  // keyboard support
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key;
+    if(/[0-9+\-*/.()]/.test(k)){ append(k); }
+    else if(k === 'Enter'){ document.querySelector('[data-action="equals"]').click(); }
+    else if(k === 'Backspace'){ document.querySelector('[data-action="back"]').click(); }
+    else if(k === 'Escape'){ document.querySelector('[data-action="ac"]').click(); }
+  });
+
+  updateDisplay();
+})();
+</script>
+</body>
+</html>

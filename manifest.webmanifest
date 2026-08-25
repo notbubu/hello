@@ -1,0 +1,17 @@
+{
+  "name": "STORMCALC — Calculatrice Scientifique",
+  "short_name": "STORMCALC",
+  "description": "Calculatrice scientifique à l'ambiance orageuse : opérations de base, fonctions trigonométriques, logarithmes, mémoire et plus.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05060f",
+  "theme_color": "#05060f",
+  "lang": "fr",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

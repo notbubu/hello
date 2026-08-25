@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
 <title>STORMCALC — Calculatrice Scientifique</title>
+
+<!-- PWA: manifest et métadonnées -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#05060f">
+<meta name="description" content="Calculatrice scientifique à l'ambiance orageuse : opérations de base, fonctions trigonométriques, logarithmes, mémoire et plus.">
+
+<!-- Icônes (app installée / écran d'accueil) -->
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- iOS: comportement app installée -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STORMCALC">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -379,6 +394,9 @@
     </div>
 
     <div class="hint">appuie sur ⚡ pour l'orage scientifique</div>
+    <div style="text-align:center; margin-top:14px;">
+      <button id="installBtn" class="mode-pill" style="display:none; border:1px solid rgba(138,107,255,0.4); background:transparent; font-family:'Rajdhani',sans-serif;">📲 Installer l'app</button>
+    </div>
   </div>
 
 <script>
@@ -602,6 +620,37 @@
   });
 
   updateDisplay();
+
+  // ---------- PWA: enregistrement du service worker ----------
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    });
+  }
+
+  // ---------- PWA: invite d'installation (Android/desktop) ----------
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    if(installBtn) installBtn.style.display = 'inline-block';
+  });
+
+  if(installBtn){
+    installBtn.addEventListener('click', async ()=>{
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    });
+  }
+
+  window.addEventListener('appinstalled', ()=>{
+    if(installBtn) installBtn.style.display = 'none';
+  });
 })();
 </script>
 </body>
